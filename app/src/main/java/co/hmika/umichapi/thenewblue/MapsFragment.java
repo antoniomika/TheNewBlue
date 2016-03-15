@@ -94,7 +94,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public LinearLayout lay;
     public StopFragment stopmenu = new StopFragment();
     public SimpleFuture socket;
-    public boolean stopWs = false;
+    public boolean stopWS = false;
+    public boolean firstWSLoop = true;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -159,7 +160,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                     try {
                         Location loc = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                         if(loc != null) {
-                            findClosestStop(loc);
+                            try {
+                                findClosestStop(loc);
+                            } catch (Exception e) {
+
+                            }
                         }
                     } catch (SecurityException e) {
                         Log.e("TNB", e.toString());
@@ -181,13 +186,13 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public void onStop() {
         super.onStop();
         Log.i("TNB", "Detached");
-        stopWs = true;
+        stopWS = true;
     }
 
     public void onResume() {
         super.onResume();
         Log.i("TNB", "Started");
-        stopWs = false;
+        stopWS = false;
         markers = new HashMap<Integer, Marker>();
     }
 
@@ -204,6 +209,20 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         checkBox.setChecked(true);
         row.addView(checkBox);
         lay.addView(row);
+    }
+
+    public void changeCheckMarks() {
+        int checked = lay.getChildCount();
+        for (int i = checked; checked > 3; i--){
+            try {
+                TableRow row = (TableRow) lay.getChildAt(i);
+                CheckBox box = (CheckBox) row.getChildAt(0);
+                box.setChecked(false);
+                checked--;
+            } catch (Exception e) {
+
+            }
+        }
     }
 
     public void onCheckedChanged(CompoundButton but, boolean bool) {
@@ -229,6 +248,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                 }
             }
         }
+
         if(routemarkers.containsKey(id)) {
             if(bool) {
                 List<Marker> value = routemarkers.get(id);
@@ -325,8 +345,12 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         int stopId = hm.get(list.get(minIndex));
 
         HashMap<String, String> stop = stopshmap.get(stopId);
-        TextView tv = (TextView) getView().findViewById(R.id.follow);
-        tv.setText("Nearest Stop: " + stop.get("name"));
+        try {
+            TextView tv = (TextView) getView().findViewById(R.id.follow);
+            tv.setText("Nearest Stop: " + stop.get("name"));
+        } catch (Exception e) {
+
+        }
     }
 
     private final LocationListener mLocationListener = new LocationListener() {
@@ -378,7 +402,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             msgObj.setData(b);
                             mhandler.sendMessage(msgObj);
                         }
-                        if(stopWs) {
+                        if(stopWS) {
                             webSocket.close();
                         }
                     }
@@ -390,7 +414,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public void animateMarkerToICS(final Marker marker, LatLng finalPosition) {
         final LatLng target = finalPosition;
 
-        final long duration = 400;
+        final long duration = 1250;
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
         Projection proj = map.getProjection();
@@ -409,7 +433,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                 marker.setPosition(new LatLng(lat, lng));
                 if (t < 1.0) {
                     // Post again 10ms later.
-                    handler.postDelayed(this, 100);
+                    handler.postDelayed(this, 10);
                 } else {
                     // animation ended
                 }
@@ -422,6 +446,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
             String s = msg.getData().getString("message");
             try {
                 JSONArray arr = new JSONArray(s);
+                ArrayList<Integer> busList = new ArrayList<Integer>();
                 for(int i = 0; i < arr.length(); i++) {
                     JSONObject bus = arr.getJSONObject(i);
                     Integer id = bus.getInt("id");
@@ -431,7 +456,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
 
                     if (markers.containsKey(id)) {
                         Marker marker = markers.get(id);
-                        LatLngInterpolator inter = new LatLngInterpolator.Spherical();
                         animateMarkerToICS(marker, new LatLng(lat, lon));
                         //marker.setPosition(new LatLng(lat, lon));
                     } else {
@@ -452,6 +476,32 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             }
                         }
                     }
+                    busList.add(id);
+                }
+
+                if(firstWSLoop) {
+                    changeCheckMarks();
+                    firstWSLoop = false;
+                }
+
+                for (Map.Entry<Integer, Marker> entry : markers.entrySet()) {
+                    Integer key = entry.getKey();
+                    Marker omark = entry.getValue();
+
+                    if(!busList.contains(key)) {
+                        omark.remove();
+                    }
+
+                    /*for (Map.Entry<Integer, List<Marker>> val : routemarkers.entrySet()) {
+                        Integer nkey = val.getKey();
+                        List<Marker> value = val.getValue();
+
+                        for(int i = 0; i < value.size(); i++) {
+                            if(value.contains(omark)) {
+                                value.remove(omark);
+                            }
+                        }
+                    }*/
                 }
             } catch (Exception e) {
                 Log.i("TNB", e.toString());

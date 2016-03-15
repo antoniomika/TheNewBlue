@@ -2,6 +2,8 @@ package co.hmika.umichapi.thenewblue;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.NavigationView;
@@ -19,15 +21,17 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    Intent backgroundService;
     public boolean doubleBackToExitPressedOnce = false;
     public AboutFragment about = new AboutFragment();
     public DiningFragment dining = new DiningFragment();
     public MapsFragment maps = new MapsFragment();
-    public PushFragment push = new PushFragment();
+    public CreateNotification push = new CreateNotification();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        backgroundService = new Intent(getBaseContext(), NotificationBackgroundService.class);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -44,6 +48,7 @@ public class MainActivity extends AppCompatActivity
         Fragment fragment = new MapsFragment();
         changeFrag(R.id.content_main, fragment);
         setTitle("Buses");
+
     }
 
     @Override
@@ -142,4 +147,5 @@ public class MainActivity extends AppCompatActivity
                 .replace(id, fragment)
                 .commit();
     }
+
 }

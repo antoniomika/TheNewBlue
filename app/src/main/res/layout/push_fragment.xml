@@ -2,6 +2,45 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="?android:attr/actionBarSize">
+    android:paddingTop="?android:attr/actionBarSize"
+    android:background="@color/lightBack">
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/RouteChoicesSpinner"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/SpecificRouteSpinner"
+        android:layout_below="@+id/RouteChoicesSpinner"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Button"
+        android:id="@+id/testButton"
+        android:layout_below="@+id/SpecificRouteSpinner"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:id="@+id/startService"
+        android:layout_below="@+id/testButton"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop"
+        android:id="@+id/stopService"
+        android:layout_below="@+id/testButton"
+        android:layout_alignParentEnd="true" />
 </LinearLayout>

@@ -12,4 +12,5 @@
     <string name="abouttext">Authors: <a href="https://antoniomika.me">Antonio Mika</a> and <a href="https://domthebomb.com">Dominik Konik</a>\n\n
         This app is still in its infancy.\n\n
         This was all thrown together in about a weekend to meet a competition deadline, but we definitely have plans to make it better.</string>
+    <string name="preferenceFileKey">keepServiceRunning</string>
 </resources>
