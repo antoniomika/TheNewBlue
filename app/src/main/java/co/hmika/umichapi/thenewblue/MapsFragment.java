@@ -610,7 +610,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             Marker marker = map.addMarker(new MarkerOptions()
                                             .position(new LatLng(lat, lon))
                                             .title(route.get("short_name"))
-                                    .icon(BitmapDescriptorFactory.fromBitmap(Bitmap.createScaledBitmap(obm, 64, 90, false))));
+                                    .icon(BitmapDescriptorFactory.fromBitmap(Bitmap.createScaledBitmap(obm, 96, 135, false))));
                                     //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                                     markers.put(id, marker);
 
