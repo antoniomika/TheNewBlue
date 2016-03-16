@@ -5,8 +5,17 @@ import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
 import android.app.FragmentManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.PictureDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -78,10 +87,13 @@ import com.koushikdutta.async.http.AsyncHttpClient;
 import com.koushikdutta.async.http.WebSocket;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
+import com.caverock.androidsvg.*;
+
 public class MapsFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapClickListener, CompoundButton.OnCheckedChangeListener, GoogleMap.OnInfoWindowClickListener {
 
     private GoogleMap map;
     public HashMap<Integer, HashMap<String, String>> stopshmap = new HashMap<Integer, HashMap<String, String>>();
+    public HashMap<Integer, HashMap<String, String>> buseshmap = new HashMap<Integer, HashMap<String, String>>();
     public HashMap<Integer, HashMap<String, String>> routeshmap = new HashMap<Integer, HashMap<String, String>>();
     public HashMap<Integer, Polyline> polylines = new HashMap<Integer, Polyline>();
     public HashMap<Integer, Circle> circles = new HashMap<Integer, Circle>();
@@ -163,7 +175,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             try {
                                 findClosestStop(loc);
                             } catch (Exception e) {
-
+                                Log.e("TNB", e.toString());
                             }
                         }
                     } catch (SecurityException e) {
@@ -414,7 +426,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public void animateMarkerToICS(final Marker marker, LatLng finalPosition) {
         final LatLng target = finalPosition;
 
-        final long duration = 1250;
+        final long duration = 2000;
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
         Projection proj = map.getProjection();
@@ -441,6 +453,66 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         });
     }
 
+    public double haversine(double lat1, double lon1, double lat2, double lon2) {
+        int R = 6371000;
+        double dLat = toRad(lat2 - lat1);
+        double dLon = toRad(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double d = R * c;
+        return d;
+    }
+
+    public ArrayList<Double> nearest_point_polyline(double px, double py, Polyline polyline, double limit) {
+        ArrayList<Double> nearest_point = new ArrayList<Double>();
+        nearest_point.add(px);
+        nearest_point.add(py);
+        double nearest_dist = limit;
+        if (polyline.getPoints().size() < 4) return nearest_point;
+        for (int i = 0; i < polyline.getPoints().size() - 3; i += 2) {
+            ArrayList<Double> nearest = nearest_point_segment(px, py, polyline.getPoints().get(i + 0), polyline.getPoints().get(i + 1));
+            double dist = haversine(px, py, nearest.get(0), nearest.get(1));
+            if (dist < nearest_dist) {
+                nearest_point = nearest;
+                nearest_dist = dist;
+            }
+        }
+        return nearest_point;
+    }
+
+    public ArrayList<Double> nearest_point_segment(double px, double py, LatLng ll1, LatLng ll2) {
+        double vx = ll1.latitude;
+        double vy = ll1.longitude;
+        double wx = ll2.latitude;
+        double wy = ll2.longitude;
+        ArrayList<Double> returnlist = new ArrayList<Double>();
+        if (vx == wx && vy == wy) {
+            returnlist.add(vx);
+            returnlist.add(vy);
+            return returnlist;
+        }
+        double l2 = (vx - wx) * (vx - wx) + (vy - wy) * (vy - wy);
+        double t = ((px - vx) * (wx - vx) + (py - vy) * (wy - vy)) / l2;
+        if (t < 0) {
+            returnlist.add(vx);
+            returnlist.add(vy);
+            return returnlist;
+        } else if (t > 1.0) {
+            returnlist.add(wx);
+            returnlist.add(wy);
+            return returnlist;
+        }
+        double projx = vx + t * (wx - vx);
+        double projy = vy + t * (wy - vy);
+        returnlist.add(projx);
+        returnlist.add(projy);
+        return returnlist;
+    }
+
+    public double toRad(double degree) {
+        return degree * Math.PI / 180;
+    }
+
     private final Handler mhandler = new Handler() {
         public void handleMessage(Message msg) {
             String s = msg.getData().getString("message");
@@ -448,25 +520,73 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                 JSONArray arr = new JSONArray(s);
                 ArrayList<Integer> busList = new ArrayList<Integer>();
                 for(int i = 0; i < arr.length(); i++) {
+                    HashMap<String, String> temp = new HashMap<String, String>();
                     JSONObject bus = arr.getJSONObject(i);
                     Integer id = bus.getInt("id");
                     Double lat = bus.getDouble("lat");
                     Double lon = bus.getDouble("lon");
                     Integer rid = bus.getInt("route");
+                    Integer lastUpdate = bus.getInt("lastUpdate");
+
+                    temp.put("lat", Double.toString(lat));
+                    temp.put("lon", Double.toString(lon));
+                    temp.put("route", Integer.toString(rid));
+                    temp.put("lastUpdate", Integer.toString(lastUpdate));
+
+                    buseshmap.put(id, temp);
 
                     if (markers.containsKey(id)) {
                         Marker marker = markers.get(id);
+                        Polyline polyline = polylines.get(rid);
+
+                        /*ArrayList<Float> list = new ArrayList<Float>();
+                        HashMap<Float, Integer> hm = new HashMap<Float, Integer>();
+                        for (int j = 0; j < polyline.getPoints().size(); j++) {
+                            float[] distance = new float[1];
+                            try {
+                                Location.distanceBetween(lat, lon, polyline.getPoints().get(j).latitude, polyline.getPoints().get(j).longitude, distance);
+                            } catch (Exception e) {
+
+                            }
+                            list.add(distance[0]);
+                            hm.put(distance[0], j);
+                        }
+                        float fl = Collections.min(list);
+                        int minIndex = list.indexOf(fl);
+                        int pointId = hm.get(list.get(minIndex));*/
+
                         animateMarkerToICS(marker, new LatLng(lat, lon));
                         //marker.setPosition(new LatLng(lat, lon));
                     } else {
                         if (routeshmap.containsKey(rid)) {
                             HashMap<String, String> route = routeshmap.get(rid);
 
+                            int newcolor = (int)Long.parseLong(route.get("color"), 16);
+                            int r = (newcolor >> 16) & 0xFF;
+                            int g = (newcolor >> 8) & 0xFF;
+                            int b = (newcolor >> 0) & 0xFF;
+
+                            int rcolor = Color.argb(100, r, g, b);
+
+                            Bitmap ob = BitmapFactory.decodeResource(getResources(), R.drawable.pin);
+                            Bitmap obm = Bitmap.createBitmap(ob.getWidth(), ob.getHeight(), ob.getConfig());
+                            Canvas canvas = new Canvas(obm);
+                            Paint paint = new Paint();
+                            paint.setColorFilter(new PorterDuffColorFilter(rcolor, PorterDuff.Mode.SRC_IN));
+                            canvas.drawBitmap(ob, 0f, 0f, paint);
+
+                            Paint textpaint = new Paint();
+                            textpaint.setColor(Color.parseColor("#" + route.get("color"))); // Text Color
+                            textpaint.setTextSize(24 * getResources().getDisplayMetrics().density); // Text Size
+                            textpaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
+                            canvas.drawText(route.get("short_name"), 56f, 106f, textpaint);
+
                             Marker marker = map.addMarker(new MarkerOptions()
-                                    .position(new LatLng(lat, lon))
-                                    .title(route.get("short_name"))
-                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                            markers.put(id, marker);
+                                            .position(new LatLng(lat, lon))
+                                            .title(route.get("short_name"))
+                                    .icon(BitmapDescriptorFactory.fromBitmap(obm)));
+                                    //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                                    markers.put(id, marker);
 
                             if(routemarkers.containsKey(rid)) {
                                 routemarkers.get(rid).add(marker);
@@ -508,6 +628,53 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
             }
         }
     };
+
+    public static Bitmap drawableToBitmap (Drawable drawable) {
+        Bitmap bitmap = null;
+
+        if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            if(bitmapDrawable.getBitmap() != null) {
+                return bitmapDrawable.getBitmap();
+            }
+        }
+
+        if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+            bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+        } else {
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        }
+
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    public static Bitmap changeImageColor(Bitmap srcBmp, int dstColor) {
+
+        int width = srcBmp.getWidth();
+        int height = srcBmp.getHeight();
+
+        float srcHSV[] = new float[3];
+        float dstHSV[] = new float[3];
+
+        Bitmap dstBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                Color.colorToHSV(srcBmp.getPixel(col, row), srcHSV);
+                Color.colorToHSV(dstColor, dstHSV);
+
+                // If it area to be painted set only value of original image
+                dstHSV[2] = srcHSV[2];  // value
+
+                dstBitmap.setPixel(col, row, Color.HSVToColor(dstHSV));
+            }
+        }
+
+        return dstBitmap;
+    }
 
     class RetrieveRoutes extends AsyncTask<String, Void, String> {
 
