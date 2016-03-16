@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -469,8 +470,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         nearest_point.add(py);
         double nearest_dist = limit;
         if (polyline.getPoints().size() < 4) return nearest_point;
-        for (int i = 0; i < polyline.getPoints().size() - 3; i += 2) {
-            ArrayList<Double> nearest = nearest_point_segment(px, py, polyline.getPoints().get(i + 0), polyline.getPoints().get(i + 1));
+        for (int i = 0; i < polyline.getPoints().size() - 10; i += 6) {
+            ArrayList<Double> nearest = nearest_point_segment(px, py, polyline.getPoints().get(i), polyline.getPoints().get(i + 6));
             double dist = haversine(px, py, nearest.get(0), nearest.get(1));
             if (dist < nearest_dist) {
                 nearest_point = nearest;
@@ -523,8 +524,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                     HashMap<String, String> temp = new HashMap<String, String>();
                     JSONObject bus = arr.getJSONObject(i);
                     Integer id = bus.getInt("id");
-                    Double lat = bus.getDouble("lat");
-                    Double lon = bus.getDouble("lon");
+                    double lat = bus.getDouble("lat");
+                    double lon = bus.getDouble("lon");
                     Integer rid = bus.getInt("route");
                     Integer lastUpdate = bus.getInt("lastUpdate");
 
@@ -555,7 +556,25 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                         int minIndex = list.indexOf(fl);
                         int pointId = hm.get(list.get(minIndex));*/
 
-                        animateMarkerToICS(marker, new LatLng(lat, lon));
+                        List<LatLng> points = polyline.getPoints();
+                        double nearest_dist = 80;
+
+                        PointF p = new PointF((float) lat, (float) lon);
+                        for(int j = 0; j < points.size() - 3; j += 2) {
+                            LatLng point = points.get(j);
+                            LatLng point2 = points.get(j + 2);
+                            //ArrayList<Double> list = nearest_point_polyline(lat, lon, polyline, 80.0);
+                            PointF testp = MapGeo.getClosestPointOnSegment(new PointF((float) point.latitude, (float) point.longitude), new PointF((float) point2.latitude, (float) point2.longitude), new PointF((float) lat, (float) lon));
+                            double dist = haversine(lat, lon, testp.x, testp.y);
+                            if (dist < nearest_dist) {
+                                p = testp;
+                                nearest_dist = dist;
+                            }
+                        }
+
+                        animateMarkerToICS(marker, new LatLng(p.x, p.y));
+
+                        //animateMarkerToICS(marker, new LatLng(lat, lon));
                         //marker.setPosition(new LatLng(lat, lon));
                     } else {
                         if (routeshmap.containsKey(rid)) {
@@ -566,25 +585,26 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             int g = (newcolor >> 8) & 0xFF;
                             int b = (newcolor >> 0) & 0xFF;
 
-                            int rcolor = Color.argb(100, r, g, b);
+                            //int rcolor = Color.argb(100, r, g, b);
+                            int rcolor = Color.parseColor("#" + route.get("color"));
 
-                            Bitmap ob = BitmapFactory.decodeResource(getResources(), R.drawable.pin);
+                            Bitmap ob = BitmapFactory.decodeResource(getResources(), R.drawable.transport);
                             Bitmap obm = Bitmap.createBitmap(ob.getWidth(), ob.getHeight(), ob.getConfig());
                             Canvas canvas = new Canvas(obm);
                             Paint paint = new Paint();
                             paint.setColorFilter(new PorterDuffColorFilter(rcolor, PorterDuff.Mode.SRC_IN));
                             canvas.drawBitmap(ob, 0f, 0f, paint);
 
-                            Paint textpaint = new Paint();
+                            /*Paint textpaint = new Paint();
                             textpaint.setColor(Color.parseColor("#" + route.get("color"))); // Text Color
                             textpaint.setTextSize(24 * getResources().getDisplayMetrics().density); // Text Size
                             textpaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
-                            canvas.drawText(route.get("short_name"), 56f, 106f, textpaint);
+                            canvas.drawText(route.get("short_name"), 56f, 106f, textpaint);*/
 
                             Marker marker = map.addMarker(new MarkerOptions()
                                             .position(new LatLng(lat, lon))
                                             .title(route.get("short_name"))
-                                    .icon(BitmapDescriptorFactory.fromBitmap(obm)));
+                                    .icon(BitmapDescriptorFactory.fromBitmap(Bitmap.createScaledBitmap(obm, 64, 64, false))));
                                     //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                                     markers.put(id, marker);
 
