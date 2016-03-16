@@ -433,7 +433,13 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         Projection proj = map.getProjection();
 
         Point startPoint = proj.toScreenLocation(marker.getPosition());
-        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        LatLng sltln = proj.fromScreenLocation(startPoint);
+
+        if(sltln == null) {
+            sltln = marker.getPosition();
+        }
+
+        final LatLng startLatLng = sltln;
 
         final Interpolator interpolator = new LinearInterpolator();
         handler.post(new Runnable() {
@@ -560,9 +566,9 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                         double nearest_dist = 80;
 
                         PointF p = new PointF((float) lat, (float) lon);
-                        for(int j = 0; j < points.size() - 3; j += 2) {
+                        for(int j = 0; j < points.size() - 4; j += 3) {
                             LatLng point = points.get(j);
-                            LatLng point2 = points.get(j + 2);
+                            LatLng point2 = points.get(j + 3);
                             //ArrayList<Double> list = nearest_point_polyline(lat, lon, polyline, 80.0);
                             PointF testp = MapGeo.getClosestPointOnSegment(new PointF((float) point.latitude, (float) point.longitude), new PointF((float) point2.latitude, (float) point2.longitude), new PointF((float) lat, (float) lon));
                             double dist = haversine(lat, lon, testp.x, testp.y);
@@ -588,7 +594,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             //int rcolor = Color.argb(100, r, g, b);
                             int rcolor = Color.parseColor("#" + route.get("color"));
 
-                            Bitmap ob = BitmapFactory.decodeResource(getResources(), R.drawable.transport);
+                            Bitmap ob = BitmapFactory.decodeResource(getResources(), R.drawable.transportarrow);
                             Bitmap obm = Bitmap.createBitmap(ob.getWidth(), ob.getHeight(), ob.getConfig());
                             Canvas canvas = new Canvas(obm);
                             Paint paint = new Paint();
@@ -604,7 +610,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                             Marker marker = map.addMarker(new MarkerOptions()
                                             .position(new LatLng(lat, lon))
                                             .title(route.get("short_name"))
-                                    .icon(BitmapDescriptorFactory.fromBitmap(Bitmap.createScaledBitmap(obm, 64, 64, false))));
+                                    .icon(BitmapDescriptorFactory.fromBitmap(Bitmap.createScaledBitmap(obm, 64, 90, false))));
                                     //.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                                     markers.put(id, marker);
 
