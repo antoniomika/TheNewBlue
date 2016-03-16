@@ -315,6 +315,34 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         LatLng umich = new LatLng(42.285516, -83.718283);
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(umich, 13));
 
+        map.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+
+            // Use default InfoWindow frame
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null;
+            }
+
+            // Defines the contents of the InfoWindow
+            @Override
+            public View getInfoContents(Marker marker) {
+                if(markers.containsValue(marker)) {
+                    return null;
+                } else {
+                    View v = getActivity().getLayoutInflater().inflate(R.layout.infowindowlayout, null);
+                    LatLng latLng = marker.getPosition();
+
+                    TextView tv1 = (TextView) v.findViewById(R.id.infowindowtitle);
+                    TextView tv2 = (TextView) v.findViewById(R.id.infowindowinfo);
+
+                    tv1.setText(marker.getTitle());
+                    tv2.setText(marker.getSnippet());
+
+                    return v;
+                }
+            }
+        });
+
         loadData();
     }
 
@@ -358,11 +386,17 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         int stopId = hm.get(list.get(minIndex));
 
         HashMap<String, String> stop = stopshmap.get(stopId);
-        try {
-            TextView tv = (TextView) getView().findViewById(R.id.follow);
-            tv.setText("Nearest Stop: " + stop.get("name"));
-        } catch (Exception e) {
 
+        if(firstWSLoop) {
+            try {
+                TextView tv = (TextView) getView().findViewById(R.id.follow);
+                tv.setText("Nearest Stop: " + stop.get("name"));
+
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(stop.get("lat")), Double.parseDouble(stop.get("lon"))), 15));
+                circlesmark.get(stopId).showInfoWindow();
+            } catch (Exception e) {
+
+            }
         }
     }
 
@@ -783,7 +817,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
 
                     routecircles.put(id, new ArrayList<Circle>());
 
-                    for(int stop = 0; stop < stops.length(); stop++) {
+                    for (int stop = 0; stop < stops.length(); stop++) {
                         int ids = stops.getInt(stop);
                         HashMap<String, String> value = stopshmap.get(ids);
 
