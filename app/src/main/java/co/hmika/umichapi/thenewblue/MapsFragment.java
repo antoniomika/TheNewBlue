@@ -3,7 +3,9 @@ package co.hmika.umichapi.thenewblue;
 
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
+import android.app.DialogFragment;
 import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -39,6 +41,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,6 +61,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,6 +71,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -77,6 +82,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -109,6 +115,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public SimpleFuture socket;
     public boolean stopWS = false;
     public boolean firstWSLoop = true;
+    public int currentStopId;
+
+    //Dom Delete what you don't need
+    public JSONArray currentStopEtas;
+    ArrayList<String> currentStopRoutes = new ArrayList<String>();
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -280,22 +291,49 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
     public void onInfoWindowClick(Marker marker) {
         String name = marker.getTitle();
 
+        Log.e("Notifs", "Inside On Window Click");
+
         for (Map.Entry<Integer, HashMap<String, String>> entry : stopshmap.entrySet()) {
-            Integer key = entry.getKey();
+            //Integer key = entry.getKey();
             HashMap<String, String> stop = entry.getValue();
 
-            if(stop.get("name").equals(name)) {
-                Fragment fragment = stopmenu;
-                Bundle args = new Bundle();
-                args.putInt("id", key);
-                args.putString("name", name);
-                args.putString("description", stop.get("description"));
-                fragment.setArguments(args);
 
-                FragmentManager fragmentManager = getFragmentManager();
-                fragmentManager.beginTransaction()
-                        .replace(R.id.content_main, fragment)
-                        .commit();
+            if(stop.get("name").equals(name)) {
+                try{
+                    DialogFragment fragment = new SetNotifFragment();
+
+                    Bundle args = new Bundle();
+                    //key, list of routes,
+                    args.putInt("stopID", entry.getKey());
+                    if(currentStopRoutes.size() == 0){
+                        Log.e("noworky", "did not work");
+                    } else{
+                        Log.e("worky", "did work");
+                    }
+                    args.putStringArrayList("currentStopRoutes", currentStopRoutes);
+                    args.putString("stopName", name);
+                    args.putSerializable("routeshmap", routeshmap);
+
+                    fragment.setArguments(args);
+
+                    FragmentTransaction ft = getFragmentManager().beginTransaction();
+                    Fragment prev = getFragmentManager().findFragmentByTag("setNotifFrag");
+                    if(prev != null){
+                        ft.remove(prev);
+                    }
+
+                    fragment.show(ft, "setNotifFrag");
+
+                    /*FragmentManager fragmentManager = getFragmentManager();
+                    fragmentManager.beginTransaction()
+                            .show(fragment);*/
+
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+
+
+
             }
         }
     }
@@ -325,7 +363,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
 
             // Defines the contents of the InfoWindow
             @Override
-            public View getInfoContents(Marker marker) {
+            public View getInfoContents(final Marker marker) {
                 if(markers.containsValue(marker)) {
                     return null;
                 } else {
@@ -333,10 +371,83 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                     LatLng latLng = marker.getPosition();
 
                     TextView tv1 = (TextView) v.findViewById(R.id.infowindowtitle);
-                    TextView tv2 = (TextView) v.findViewById(R.id.infowindowinfo);
+//                    TextView tv2 = (TextView) v.findViewById(R.id.infowindowinfo);
 
                     tv1.setText(marker.getTitle());
-                    tv2.setText(marker.getSnippet());
+//                    tv2.setText(marker.getSnippet());
+
+                    final String name = marker.getTitle();
+
+                    //Get up to date ETAs
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                String charset = "UTF-8";
+
+                                for (Map.Entry<Integer, HashMap<String, String>> entry : stopshmap.entrySet()) {
+
+                                    HashMap<String, String> stop = entry.getValue();
+
+                                    //Finds the right stop, sets the array for it
+                                    if(stop.get("name").equals(name)) {
+                                        currentStopId = entry.getKey();
+
+                                        URL url = new URL("https://mbus.doublemap.com/map/v2/eta?stop=" + currentStopId);
+                                        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+                                        urlConnection.setRequestMethod("GET");
+                                        urlConnection.setRequestProperty("Accept-Charset", charset);
+
+                                        InputStream etas = urlConnection.getInputStream();
+
+                                        StringWriter writer = new StringWriter();
+                                        IOUtils.copy(etas, writer);
+                                        String etaString= writer.toString();
+
+                                        urlConnection.disconnect();
+
+                                        //This is just getting rid of their stupid formatting
+                                        JSONObject temp = new JSONObject(etaString);
+
+                                        currentStopEtas = temp.getJSONObject("etas")
+                                                .getJSONObject(Integer.toString(currentStopId))
+                                                .getJSONArray("etas");
+
+                                        ArrayList<Integer> currentStopIDs = new ArrayList<Integer>();
+                                        currentStopRoutes.clear();
+
+                                        //Now get the string array of routes
+                                        //Loop through the routes that have etas at this stop
+                                        for(int i = 0; i < currentStopEtas.length(); ++i){
+                                            //Hasn't been added yet
+                                            int tempRouteId = currentStopEtas.getJSONObject(i).getInt("route");
+
+
+                                            if(!currentStopIDs.contains(tempRouteId)){
+                                                //Loops through all routes to get matching id
+                                                for (Map.Entry<Integer, HashMap<String, String>> entry2 : routeshmap.entrySet()) {
+                                                    HashMap<String, String> route = entry2.getValue();
+                                                    //If the id from the eta == the id from the route
+                                                    if(tempRouteId == entry2.getKey()){
+                                                        currentStopRoutes.add(route.get("name"));
+                                                        currentStopIDs.add(tempRouteId);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                }
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+
+                    thread.start();
+
+
 
                     return v;
                 }
@@ -910,10 +1021,12 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
                     Double lat = stop.getDouble("lat");
                     Double lon = stop.getDouble("lon");
                     String description = stop.getString("description");
+                    String etaString = stop.getJSONArray("eta").toString();
                     temp.put("name", name);
                     temp.put("lat", Double.toString(lat));
                     temp.put("lon", Double.toString(lon));
                     temp.put("description", description);
+                    temp.put("etaString", etaString);
                     stopshmap.put(id, temp);
                 }
 

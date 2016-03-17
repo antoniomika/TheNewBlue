@@ -1,44 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:id="@+id/infoWindowLayoutLayout"
+    >
 
-
-    <TextView
+    <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="test"
-        android:id="@+id/infowindowtitle"
-        android:textAlignment="center"
-        android:textColor="@color/colorPrimary"
-        android:textSize="24dp"
-        android:textStyle="bold"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
+        android:gravity="center_horizontal"
+        android:id="@+id/containerLayout"
+        >
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:text="test"
-        android:id="@+id/infowindowinfo"
-        android:textAlignment="center"
-        android:textSize="16dp"
-        android:textColor="@color/colorPrimaryDark"
-        android:textStyle="bold"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/infowindowtitle"
-        android:layout_toStartOf="@+id/imageView3"
-        android:layout_alignEnd="@+id/infowindowtitle" />
+
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="test"
+            android:id="@+id/infowindowtitle"
+            android:textAlignment="center"
+            android:textColor="@color/colorPrimary"
+            android:textSize="16dp"
+            android:textStyle="bold"
+            android:layout_alignParentTop="true"
+            android:layout_centerInParent="true"/>
+
+    <!--    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="test"
+            android:id="@+id/infowindowinfo"
+            android:textAlignment="center"
+            android:textSize="16dp"
+            android:textColor="@color/colorPrimaryDark"
+            android:textStyle="bold"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/infowindowtitle"
+            android:layout_toStartOf="@+id/imageView3"
+            android:layout_alignEnd="@+id/infowindowtitle" /> -->
+
+        <TextView
+            android:id="@+id/setNotification"
+            android:layout_width="wrap_content"
+            android:textSize="14dp"
+            android:layout_height="wrap_content"
+            android:text="@string/setNotification"
+            android:layout_below="@id/infowindowtitle"
+            android:layout_centerInParent="true"
+           />
+
+
+    </RelativeLayout>
+
+
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/containerLayout"
         android:id="@+id/imageView3"
         android:src="@drawable/arrows"
         android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/infowindowtitle"
-        android:layout_alignBottom="@+id/infowindowinfo" />
+        android:layout_alignBottom="@id/containerLayout" />
+
 
 </RelativeLayout>
