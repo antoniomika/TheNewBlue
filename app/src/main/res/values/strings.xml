@@ -13,4 +13,10 @@
         This app is still in its infancy.\n\n
         This was all thrown together in about a weekend to meet a competition deadline, but we definitely have plans to make it better.</string>
     <string name="preferenceFileKey">keepServiceRunning</string>
+
+    <string name="setNotification">Set Notification</string>
+    <string name="routes">Routes:</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

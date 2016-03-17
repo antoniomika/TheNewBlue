@@ -47,7 +47,7 @@ public class NotificationBackgroundService extends Service {
 
         try {
             SharedPreferences settings = getSharedPreferences(((TheNewBlue)getApplicationContext()).getString(R.string.preferenceFileKey), 0);
-            currentNotifETA = settings.getInt("currentNotifETA", 0);
+            currentNotifETA = settings.getInt("currentNotifETA", 10);
             routeName = settings.getString("routeName", "");
             currentNotifStopID = settings.getInt("currentNotifStopID", 0);
             stopName = settings.getString("stopName", "");
@@ -74,7 +74,6 @@ public class NotificationBackgroundService extends Service {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(NotificationBackgroundService.this);
         notif = mBuilder;
 
-        Log.e("array", "Created");
 
 
     }
@@ -183,7 +182,7 @@ public class NotificationBackgroundService extends Service {
                 }
 
             }
-        }, 1000, 15000);
+        }, 0, 15000);
         //return super.onStartCommand(intent, flags, startId);
         return START_STICKY;
 
