@@ -38,11 +38,13 @@ public class MenuFragment extends Fragment {
 
         String name = getArguments().getString("name");
 
-        WebView wv = (WebView) v.findViewById(R.id.webView);
+        new RetrieveDining().execute("https://umichapi.hmika.co/api/v1/dining/menus/" + name);
+
+        /*WebView wv = (WebView) v.findViewById(R.id.webView);
         wv.getSettings().setJavaScriptEnabled(true);
         wv.getSettings().setLoadWithOverviewMode(true);
         wv.setWebViewClient(new CallBack());
-        wv.loadUrl("https://mobile.its.umich.edu/michigan/dining");
+        wv.loadUrl("https://mobile.its.umich.edu/michigan/dining");*/
 
         return v;
     }

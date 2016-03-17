@@ -36,4 +36,5 @@ dependencies {
     compile 'com.google.android.gms:play-services-maps:8.4.0'
     compile 'com.sothree.slidinguppanel:library:3.3.0'
     compile 'org.apache.directory.studio:org.apache.commons.io:2.4'
+    compile 'com.github.aakira:expandable-layout:1.4.3@aar'
 }

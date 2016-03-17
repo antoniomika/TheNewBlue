@@ -404,7 +404,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback, Google
         @Override
         public void onLocationChanged(final Location location) {
             if(location != null) {
-                findClosestStop(location);
+                try {
+                    findClosestStop(location);
+                } catch (Exception e) {
+                    Log.e("TNB", e.toString());
+                }
             }
         }
 

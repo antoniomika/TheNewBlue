@@ -16,6 +16,7 @@ import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,6 +55,7 @@ public class DiningFragment extends Fragment {
     class DiningHall {
         private String name;
         private String hours;
+        private Double capacity;
 
         public String getName() {
             return name;
@@ -61,6 +63,14 @@ public class DiningFragment extends Fragment {
 
         public void setName(String nname) {
             name = nname;
+        }
+
+        public double getCapacity() {
+            return capacity;
+        }
+
+        public void setCapacity(double adsf) {
+            capacity = adsf;
         }
 
         public String getHours() {
@@ -71,9 +81,10 @@ public class DiningFragment extends Fragment {
             hours = h;
         }
 
-        public DiningHall(String nname, String h) {
+        public DiningHall(String nname, String h, Double cap) {
             name = nname;
             hours = h;
+            capacity = cap;
         }
     }
 
@@ -84,6 +95,8 @@ public class DiningFragment extends Fragment {
         private class DiningViewHolder {
             TextView name;
             TextView hours;
+            ProgressBar capacity;
+            TextView capacitytext;
         }
 
         public DiningAdapter(Context context, int tvResId, ArrayList<DiningHall> items) {
@@ -100,14 +113,18 @@ public class DiningFragment extends Fragment {
                 diningHolder = new DiningViewHolder();
                 diningHolder.name = (TextView)v.findViewById(R.id.dininghallname);
                 diningHolder.hours = (TextView)v.findViewById(R.id.dininghallhours);
+                diningHolder.capacity = (ProgressBar)v.findViewById(R.id.capacityprogressBar);
+                diningHolder.capacitytext = (TextView)v.findViewById(R.id.capacitytext);
                 v.setTag(diningHolder);
             } else diningHolder = (DiningViewHolder)v.getTag();
 
-            DiningHall taxi = items.get(pos);
+            DiningHall info = items.get(pos);
 
-            if (taxi != null) {
-                diningHolder.name.setText(taxi.getName());
-                diningHolder.hours.setText(taxi.getHours());
+            if (info != null) {
+                diningHolder.name.setText(info.getName());
+                diningHolder.hours.setText(info.getHours());
+                diningHolder.capacity.setProgress((int) (info.getCapacity() * 100L));
+                diningHolder.capacitytext.setText(Integer.toString((int) (info.getCapacity() * 100L)) + "% Full");
             }
 
             return v;
@@ -263,7 +280,16 @@ public class DiningFragment extends Fragment {
 
                             Log.i("TNB", newtimes.toString());
 
-                            diningList.add(new DiningHall(name, listString));
+                            int in = 1;
+                            int total = 1000;
+
+                            if(hall.has("capacity")) {
+                                JSONObject cap = hall.getJSONObject("capacity");
+                                in = cap.getInt("currentOccupancy");
+                                total = cap.getInt("totalCapacity");
+                            }
+
+                            diningList.add(new DiningHall(name, listString, (double) in / total));
                         }
                     }
                 }
