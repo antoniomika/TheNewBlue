@@ -93,7 +93,7 @@ public class SetNotifFragment extends DialogFragment{
 
                         //MAKE SURE TO DO THE ONSWIPE REMOVE NOTIF THING
 
-                        getFragmentManager().findFragmentById(R.id.)
+                        getDialog().hide();
 
                     }
                 }

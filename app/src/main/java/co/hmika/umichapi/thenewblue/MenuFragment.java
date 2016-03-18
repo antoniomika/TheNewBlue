@@ -40,7 +40,7 @@ public class MenuFragment extends Fragment {
 
         new RetrieveDining().execute("https://umichapi.hmika.co/api/v1/dining/menus/" + name);
 
-        /*WebView wv = (WebView) v.findViewById(R.id.webView);
+        /*WebView wv = (WebView) v.findViewById(R.id.menuWebView);
         wv.getSettings().setJavaScriptEnabled(true);
         wv.getSettings().setLoadWithOverviewMode(true);
         wv.setWebViewClient(new CallBack());

@@ -1,5 +1,6 @@
 package co.hmika.umichapi.thenewblue;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -71,8 +72,14 @@ public class NotificationBackgroundService extends Service {
         mNotificationManager.notify(notificationID, mBuilder.build());
         notif = mBuilder;*/
 
+
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(NotificationBackgroundService.this);
         notif = mBuilder;
+
+
+
+
+
 
 
 
@@ -159,11 +166,22 @@ public class NotificationBackgroundService extends Service {
                         //Log.e("asdf", "penis cheese");
                         currentNotifETA = newestETA;
 
+                        Intent notificationIntent = new Intent(getApplication(), MainActivity.class);
+
+                        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+                        PendingIntent intent = PendingIntent.getActivity(getApplication(), 0,
+                                notificationIntent, 0);
+
 
                         notif.setSmallIcon(R.drawable.ic_launcher);
 
-                        notif.setContentTitle(currentNotifETA + " Minutes Until Arrival!");
+                        notif.setContentTitle(currentNotifETA + " Minutes Until Arrival");
+
+                        notif.setStyle(new NotificationCompat.BigTextStyle().bigText("Route: " + routeName + "\nStop: " + stopName));
                         notif.setContentText("Route: " + routeName + "\nStop: " + stopName);
+                        notif.setContentIntent(intent);
 
                         Intent notifDeleted = new Intent(NotificationBackgroundService.this, NotificationDeleteReceiver.class);
                         PendingIntent notifDeletedPending = PendingIntent.getBroadcast(NotificationBackgroundService.this, 0, notifDeleted, 0);
